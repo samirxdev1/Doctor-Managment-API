@@ -211,3 +211,65 @@ For exhaustive technical details, please consult the dedicated documentation in 
 - 🗄️ [Database Schema & Collection Reference](docs/database-schema.md)
 - 🔌 [REST API Endpoints Specification](docs/api-documentation.md)
 - 🧪 [QA Testing & Persona Validation Matrix](docs/testing.md)
+
+
+---
+
+## 9. AI Agent REST API Layer (v1)
+
+A secure, token-authenticated, machine-readable REST API layer (`/api/v1/*`) is integrated on top of the hospital management core. External autonomous AI agents, clinical copilot systems, and healthcare automation scripts can programmatically interact with all hospital workflows.
+
+### 9.1 Features & Capabilities
+* **Full Healthcare Lifecycle:** Patients, Appointments, Clinical Encounters, Prescriptions, Laboratory Investigations, Pharmacy Dispensation, Inpatient Bed Allocations, and Billing.
+* **Cryptographic Token Authentication:** Single bearer token (`Authorization: Bearer <API_TOKEN>`) with constant-time SHA-256 verification and zero plain-text token storage.
+* **Granular Scopes:** Module-level RBAC permissions (e.g. `patients:read`, `patients:write`, `billing:write`, or wildcard `*`).
+* **Safety Rails:** High-impact/destructive endpoints require explicit confirmation (`?confirm=true`) with non-destructive simulation previews (`?dry_run=true`).
+* **OpenAPI 3.0 & Postman:** Fully documented at [`/API_DOCUMENTATION.md`](API_DOCUMENTATION.md) and [`openapi.json`](openapi.json), plus [`postman_collection.json`](postman_collection.json).
+
+### 9.2 Setup & Database Migration
+Establish the `api_tokens` and `api_logs` collections along with indexes:
+```bash
+cd backend
+npm run db:migrate
+```
+
+### 9.3 Generate Secure API Token
+Run the CLI generator to create a 64-character hex bearer token:
+```bash
+# Generate full-access token for primary AI Agent:
+npm run token:generate -- --name "Clinical AI Copilot" --scopes "*"
+
+# Or create a restricted scope token:
+npm run token:generate -- --name "Pharmacy Bot" --scopes "medicines:read,medicines:write,prescriptions:read" --expires 90
+```
+> The generated token will be shown **once**. Copy and configure it in your agent environment.
+
+### 9.4 Quick Verification with cURL
+Verify API connectivity using standard cURL commands:
+
+```bash
+# 1. Health Ping (Public, no auth)
+curl -s http://localhost:5000/api/v1/ping
+
+# 2. Query dynamic endpoints catalog
+curl -s -H "Authorization: Bearer <API_TOKEN>" \
+  http://localhost:5000/api/v1/meta/endpoints
+
+# 3. Search patients
+curl -s -H "Authorization: Bearer <API_TOKEN>" \
+  "http://localhost:5000/api/v1/patients?search=John"
+
+# 4. Check bed occupancy telemetry
+curl -s -H "Authorization: Bearer <API_TOKEN>" \
+  http://localhost:5000/api/v1/beds/occupancy
+
+# 5. Executive KPI summary
+curl -s -H "Authorization: Bearer <API_TOKEN>" \
+  http://localhost:5000/api/v1/reports/summary
+```
+
+Automated verification scripts:
+* **Linux / macOS:** `bash curl_tests.sh`
+* **Windows PowerShell:** `.\curl_tests.ps1`
+* **Automated Node Test Suite:** `npm --prefix backend run test:api`
+"# Doctor-Managment-API" 
